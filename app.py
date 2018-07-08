@@ -4,10 +4,17 @@ from flask_httpauth import HTTPBasicAuth
 
 import maps
 import database
+from time import gmtime, strftime
 
 
 auth = HTTPBasicAuth()
 db = database.Database()
+
+threshold = 30
+#base1 = (32.8948650, -117.1951688) #front corner
+base1 = (32.89485636,-117.19535457)
+#bass2 = (32.8949088 -117.1953398) #back corner
+
 @auth.get_password
 def get_password(username):
     if username == 'booligan':
@@ -31,15 +38,43 @@ def get_tasks():
 def get_history():
     #return jsonify({'tasks': tasks})
     #return jsonify({'tasks': [make_public_task(task) for task in tasks]})
-    return jsonify({'table': str(db.getTableSnapshot("LocationHistory"))})
+    strOut = "";
+    for row in db.getTableSnapshot("LocationHistory"):
+        strOut += str(row[1]) + "\t" + str(row[2]) + "\t" + str(row[3]) + "\n"
+    print(strOut)
+    #f = open('history.csv', 'w')
+    #f.write(strOut)
+    return jsonify("Written to file")
+
+@app.route('/bool/get/files', methods=['GET'], strict_slashes=False)
+def get_files():
+    #return jsonify({'tasks': tasks})
+    #return jsonify({'tasks': [make_public_task(task) for task in tasks]})
+    return jsonify({'table': str(db.getTableSnapshot("FilesTbl"))})
 
 @app.route('/bool/location/', methods=['POST'], strict_slashes=False)
-def setLocation():
+def addLocation():
     if not request.json or not 'latitude' in request.json or not 'longitude' in request.json:
         abort(400)
-    db.insert("LocationHistory", request.json['latitude'], request.json['longitude'])
-    print(request.json['latitude'] + " : " + request.json['longitude'])
-    return jsonify("SUCCESS! YOU SENT A LOCATION: " + request.json['latitude'] + " : " + request.json['longitude'])
+    now = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    db.insert("LocationHistory", request.json['latitude'], request.json['longitude'], now)
+    distance = maps.find_distance(request.json['latitude'], request.json['longitude'], str(base1[0]), str(base1[1]))
+    # print("Distance to base 1: " + distance)
+    # if distance <= 10:
+    #     return jsonify("https://github.com/simplificator/phonegap-helloworld/blob/master/android/bin/Hello%20World.apk?raw=true")
+    # distance = maps.find_distance(request.json['latitude'], request.json['longitude'], str(base2[0]), str(base2[1]))
+    print("Distance to base 1: " + str(distance))
+    if distance <= threshold:
+        return jsonify("https://github.com/kbasgall/exampleAppHack")
+    return jsonify("")
+
+@app.route('/bool/file/', methods=['POST'], strict_slashes=False)
+def addFile():
+    if not request.json or not 'name' in request.json or not 'path' in request.json:
+        abort(400)
+    db.insert("Files", request.json['name'], request.json['path'])
+    print(request.json['name'] + " : " + request.json['path'])
+    return jsonify("SUCCESS! YOU SENT A FILE: " + request.json['name'] + " : " + request.json['path'])
 
 @app.route('/bool/post/', methods=['POST'], strict_slashes=False)
 @auth.login_required

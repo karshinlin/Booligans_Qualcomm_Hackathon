@@ -8,8 +8,10 @@ class Database:
         self.cur = self.conn.cursor()
         self.locationTbl = 'LocationHistory'
         self.cur.execute('USE Booligans')
-        self.cur.execute("CREATE TABLE IF NOT EXISTS Booligans."+self.locationTbl+"(ID INT NOT NULL primary key AUTO_INCREMENT, Latitude DECIMAL(9,7), Longitude DECIMAL(9,7))")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS Booligans."+self.locationTbl+"(ID INT NOT NULL primary key AUTO_INCREMENT, Latitude DECIMAL(10,7), Longitude DECIMAL(10,7), Time TIMESTAMP)")
 
+        self.filesTbl = 'Files'
+        self.cur.execute("CREATE TABLE IF NOT EXISTS Booligans."+self.filesTbl+"(ID INT NOT NULL primary key AUTO_INCREMENT, Name VARCHAR(30), FilePath VARCHAR(255))")
 
     def connect(self):
         self.conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='appleuser', autocommit=True)
@@ -23,7 +25,11 @@ class Database:
 
     def insert(self, table, *args):
         if table == "LocationHistory":
-            self.cur.execute("INSERT INTO Booligans." + table + " (Latitude, Longitude)" + " VALUES (" + args[0] + ", " + args[1] + ")")
+            str = "INSERT INTO Booligans." + table + " (Latitude, Longitude, Time)" + " VALUES ('" + args[0] + "', '" + args[1] +  "','"+ args[2] + "')"
+            print(str)
+            self.cur.execute("INSERT INTO Booligans." + table + " (Latitude, Longitude, Time)" + " VALUES ('" + args[0] + "', '" + args[1] +  "','"+ args[2] + "')")
+        if table == "Files":
+            self.cur.execute("INSERT INTO Booligans." + table + " (Name, FilePath)" + " VALUES ('" + args[0] + "', '" + args[1] + "')")
         #cur.execute("INSERT INTO Booligans.Test1 VALUES (1, 'Jack')")
         #cur.execute("INSERT INTO Booligans.Test1 VALUES (2, 'Joe')")
         print(self.cur.description)
